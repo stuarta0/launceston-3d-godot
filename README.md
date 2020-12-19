@@ -1,12 +1,12 @@
 # City of Launceston Godot Project
 
-![Skyline in Godot](https://raw.githubusercontent.com/stuarta0/launceston-3d/main/docs/skyline.jpg)
-
 A Godot 3.2.2 project to view the City of Launceston 3D scan dataset in real time using LOD.
+
+![Skyline in Godot](https://raw.githubusercontent.com/stuarta0/launceston-3d/main/docs/skyline.jpg)
 
 This repository only contains the skeleton Godot project. The 3D tile assets can be found in the following repo (see *Getting Started* below for details): https://github.com/stuarta0/launceston-3d
 
-The asset repo contains 142 tiles over 6 LOD levels, with each tile having dimensions of 200m x 200m. ***Warning: the asset repo is almost 5.8 GB***
+The asset repo contains 142 tiles over 6 LOD levels, with each tile having dimensions of 200m x 200m. ***Warning: the asset repo is ~5.8 GB***
 
 ## Getting Started
 
