@@ -73,7 +73,7 @@ class Scene:
         content += list(map(str, self.nodes))
         return '\n\n'.join(content)
 
-def create():
+def create(use_lod=True):
     tile_root = Node('Tiles', type='Spatial')
     master = Scene(nodes=[
         Node('Spatial', parent=None, type='Spatial'),
@@ -89,28 +89,38 @@ def create():
 
             # create {path}.tscn
             # assumption: L20, L17 and L15 lods exist for every tile
-            resources = [
-                ExternalScript('res://addons/lod/lod_spatial.gd', 1),
-                ExternalScene(f'res://dataset/gltf/L20/{name}/{name}_L20.gltf', 2),
-                ExternalScene(f'res://dataset/gltf/L17/{name}/{name}_L17.gltf', 3),
-                ExternalScene(f'res://dataset/gltf/L15/{name}/{name}_L15.gltf', 4),
-            ]
+            if use_lod:
+                resources = [
+                    ExternalScript('res://addons/lod/lod_spatial.gd', 1),
+                    ExternalScene(f'res://dataset/gltf/L20/{name}/{name}_L20.gltf', 2),
+                    ExternalScene(f'res://dataset/gltf/L17/{name}/{name}_L17.gltf', 3),
+                    ExternalScene(f'res://dataset/gltf/L15/{name}/{name}_L15.gltf', 4),
+                ]
 
-            nodes = [
-                Node(name, parent=None, type='Spatial', attributes=OrderedDict(
-                    script = f'ExtResource( 1 )',
-                    lod_0_max_distance = 400.0,
-                    lod_1_max_distance = 800.0,
-                    lod_2_max_distance = 3000.0,
-                )),
-                Node(f'{name}_L20-lod0', instance=resources[1], attributes=OrderedDict(
-                    visible = False
-                )),
-                Node(f'{name}_L17-lod1', instance=resources[2], attributes=OrderedDict(
-                    visible = False
-                )),
-                Node(f'{name}_L15-lod2', instance=resources[3]),
-            ]
+                nodes = [
+                    Node(name, parent=None, type='Spatial', attributes=OrderedDict(
+                        script = f'ExtResource( 1 )',
+                        lod_0_max_distance = 400.0,
+                        lod_1_max_distance = 800.0,
+                        lod_2_max_distance = 3000.0,
+                    )),
+                    Node(f'{name}_L20-lod0', instance=resources[1], attributes=OrderedDict(
+                        visible = False
+                    )),
+                    Node(f'{name}_L17-lod1', instance=resources[2], attributes=OrderedDict(
+                        visible = False
+                    )),
+                    Node(f'{name}_L15-lod2', instance=resources[3]),
+                ]
+            else:
+                # no lod, just use L20
+                resources = [
+                    ExternalScene(f'res://dataset/gltf/L20/{name}/{name}_L20.gltf', 1),
+                ]
+                nodes = [
+                    Node(name, parent=None, type='Spatial'),
+                    Node(f'{name}_L20', instance=resources[0]),
+                ]
 
             scene = Scene(resources, nodes)
             scene_filepath = os.path.join(project, 'dataset', f'{name}.tscn')

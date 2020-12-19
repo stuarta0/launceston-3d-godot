@@ -3,6 +3,8 @@ import re
 import shutil
 from create_scenes import create
 
+USE_LOD = False
+
 project = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 dataset = os.path.join(project, 'dataset')
 lods = (15, 17, 20)
@@ -14,4 +16,4 @@ else:
     print("Dataset exists.")
 
 print("Creating scenes...")
-create()
+create(USE_LOD)
