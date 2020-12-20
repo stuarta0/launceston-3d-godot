@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 project = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
+
 class ExternalResource:
     def __init__(self, path, type, id):
         self.path = path
@@ -25,12 +26,13 @@ class ExternalScene(ExternalResource):
 
 
 class Node:
-    def __init__(self, name, parent='.', instance=None, type=None, attributes=OrderedDict()):
+    def __init__(self, name, parent='.', instance=None, type=None, attributes=OrderedDict(), connections=[]):
         self.name = name
         self.parent = parent
         self.instance = instance
         self.type = type
         self.attributes = attributes
+        self.connections = connections
 
     def __str__(self):
         context = {
@@ -50,7 +52,11 @@ class Node:
         for k, v in self.attributes.items():
             if type(v) == bool:
                 v = str(v).lower()
+            elif type(v) in (list, tuple):
+                v = str(v).replace("'", '"')
             content.append(f'{k} = {v}')
+
+        content += map(str, self.connections)
         return '\n'.join(content)
 
 
@@ -61,6 +67,29 @@ class Transform:
     def __str__(self):
         return 'Transform( {} )'.format(', '.join(map(str, self.matrix)))
 
+
+class AABB:
+    def __init__(self, *aabb):
+        self.aabb = aabb
+
+    def __str__(self):
+        return 'AABB( {} )'.format(', '.join(map(str, self.aabb)))
+
+
+class Connection:
+    def __init__(self, signal, source, dest=".", method=None):
+        self.signal = signal
+        self.source = source
+        self.dest = dest
+        self.method = method
+        if not self.method:
+            self.method = f'_on_{self.source}_{self.signal}'
+    
+    def __str__(self):
+        source = self.source
+        if type(source) == Node:
+            source = source.name
+        return f'[connection signal="{self.signal}" from="{source}" to="{self.dest}" method="{self.method}"]'
 
 class Scene:
     def __init__(self, resources=[], nodes=[]):
@@ -73,7 +102,12 @@ class Scene:
         content += list(map(str, self.nodes))
         return '\n\n'.join(content)
 
-def create(use_lod=True):
+
+LOD_ADDON = 'addon'
+LOD_CUSTOM = 'custom'
+LOD_OFF = None
+
+def create(lod_method='addon'):
     tile_root = Node('Tiles', type='Spatial')
     master = Scene(nodes=[
         Node('Spatial', parent=None, type='Spatial'),
@@ -89,7 +123,7 @@ def create(use_lod=True):
 
             # create {path}.tscn
             # assumption: L20, L17 and L15 lods exist for every tile
-            if use_lod:
+            if lod_method == LOD_ADDON:
                 resources = [
                     ExternalScript('res://addons/lod/lod_spatial.gd', 1),
                     ExternalScene(f'res://dataset/gltf/L20/{name}/{name}_L20.gltf', 2),
@@ -111,6 +145,32 @@ def create(use_lod=True):
                         visible = False
                     )),
                     Node(f'{name}_L15-lod2', instance=resources[3]),
+                ]
+            elif lod_method == LOD_CUSTOM:
+                resources = [
+                    ExternalScript('res://dynamic_lod.gd', 1),
+                    ExternalScene(f'res://dataset/gltf/L15/{name}/{name}_L15.gltf', 2),
+                ]
+
+                nodes = [
+                    Node(name, parent=None, type='Spatial', attributes=OrderedDict(
+                        script = f'ExtResource( 1 )',
+                        lod_resources = [f'res://dataset/gltf/L{lod}/{name}/{name}_L{lod}.gltf' for lod in [20, 18, 16, 15]],
+                        lod_distances = [ 400.0, 800.0, 1500, 3000.0 ],
+                    )),
+                    Node('placeholder', instance=resources[1]),
+                    Node('VisibilityEnabler', type='VisibilityEnabler', attributes=OrderedDict(
+                        transform = Transform(
+                            1, 0, 0,
+                            0, 1, 0,
+                            0, 0, 1,
+                            0, 100, 0
+                        ),
+                        aabb = AABB(-100, -100, -100, 200, 100, 200),
+                    ), connections=[
+                        Connection('camera_entered', 'VisibilityEnabler'),
+                        Connection('camera_exited', 'VisibilityEnabler'),
+                    ])
                 ]
             else:
                 # no lod, just use L20
@@ -144,4 +204,4 @@ def create(use_lod=True):
         f.write(str(master))
 
 if __name__ == "__main__": 
-    create()
+    create(LOD_CUSTOM)
